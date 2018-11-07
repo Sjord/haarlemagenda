@@ -21,14 +21,14 @@ calendar.add('summary', "Haarlem")
 calendar.add('prodid', '-//Haarlem agenda//Haarlem agenda//')
 calendar.add('version', '2.0')
 
-mainpage = "https://www.haarlemmarketing.nl/uitagenda"
-root = "https://www.haarlemmarketing.nl"
-events_page = "https://www.haarlemmarketing.nl/uitagenda/overzicht?calendar_range=&search=&keyword=Evenementen"
+mainpage = "https://www.visithaarlem.com/nl/uitagenda"
+root = "https://www.visithaarlem.com"
+events_page = "https://www.visithaarlem.com/nl/uitagenda/overzicht?calendar_range=&keyword=Evenementen&search="
 
 res = requests.get(events_page)
 soup = BeautifulSoup(res.text, "html.parser")
 links = soup.select("a.tile__link-overlay")
-urls = [root + a['href'] for a in links if a['href'].startswith("/uitagenda/overzicht/")]
+urls = [root + a['href'] for a in links if a['href'].startswith("/nl/uitagenda/overzicht/")]
 for url in urls:
     print(url)
     res = requests.get(url)
