@@ -16,6 +16,19 @@ class EventData:
         self.end = max(dates)
 
 
+# Copy start dates from existing haarlem.ics
+start_dates = {}
+try:
+    with open('haarlem.ics', 'rb') as fp:
+        old_calendar = Calendar.from_ical(fp.read())
+        for ev in old_calendar.walk("VEVENT"):
+            start_date = ev['dtstart'].dt
+            summary = ev['summary']
+            start_dates[summary] = start_date
+except FileNotFoundError:
+    print("haarlem.ics not found")
+
+
 calendar = Calendar()
 calendar.add('summary', "Haarlem")
 calendar.add('prodid', '-//Haarlem agenda//Haarlem agenda//')
@@ -36,9 +49,14 @@ for url in urls:
     data_tag = soup.find("script", type="application/ld+json")
     data = EventData(json.loads(data_tag.text))
 
+    summary = data.summary
+    start_date = data.start.date()
+    if summary in start_dates:
+        start_date = min(start_date, start_dates[summary])
+
     event = Event()
-    event.add('summary', data.summary)
-    event.add('dtstart', data.start.date())
+    event.add('summary', summary)
+    event.add('dtstart', start_date)
     event.add('dtend', data.end.date())
     event.add('dtstamp', datetime.now())
     event.add('description', data.description)
