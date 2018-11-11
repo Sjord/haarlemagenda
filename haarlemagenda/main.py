@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import json
 from icalendar import Calendar, Event
 import dateutil.parser
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class EventData:
@@ -14,6 +14,7 @@ class EventData:
         dates = [dateutil.parser.parse(d['startDate']) for d in data]
         self.start = min(dates)
         self.end = max(dates)
+        self.duration = self.end - self.start
 
 
 # Copy start dates from existing haarlem.ics
@@ -49,18 +50,19 @@ for url in urls:
     data_tag = soup.find("script", type="application/ld+json")
     data = EventData(json.loads(data_tag.text))
 
-    summary = data.summary
-    start_date = data.start.date()
-    if summary in start_dates:
-        start_date = min(start_date, start_dates[summary])
+    if data.duration < timedelta(days=14):
+        summary = data.summary
+        start_date = data.start.date()
+        if summary in start_dates:
+            start_date = min(start_date, start_dates[summary])
 
-    event = Event()
-    event.add('summary', summary)
-    event.add('dtstart', start_date)
-    event.add('dtend', data.end.date())
-    event.add('dtstamp', datetime.now())
-    event.add('description', data.description)
-    calendar.add_component(event)
+        event = Event()
+        event.add('summary', summary)
+        event.add('dtstart', start_date)
+        event.add('dtend', data.end.date())
+        event.add('dtstamp', datetime.now())
+        event.add('description', data.description)
+        calendar.add_component(event)
 
 with open('haarlem.ics', 'wb') as fp:
     fp.write(calendar.to_ical())
