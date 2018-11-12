@@ -10,6 +10,7 @@ class EventData:
     def __init__(self, data):
         self.summary = data[0]['name']
         self.description = data[0]['description']
+        self.image = data[0].get('image')
 
         dates = [dateutil.parser.parse(d['startDate']) for d in data]
         self.start = min(dates)
@@ -62,6 +63,8 @@ for url in urls:
         event.add('dtend', data.end.date())
         event.add('dtstamp', datetime.now())
         event.add('description', data.description)
+        if data.image:
+            event.add('image', data.image, parameters={'VALUE': 'URI'})
         calendar.add_component(event)
 
 with open('haarlem.ics', 'wb') as fp:
