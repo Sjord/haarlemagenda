@@ -4,6 +4,7 @@ import json
 from icalendar import Calendar, Event
 import dateutil.parser
 from datetime import datetime, timedelta
+import locale
 
 
 class EventData:
@@ -17,6 +18,18 @@ class EventData:
         self.end = max(dates)
         self.duration = self.end - self.start
 
+
+def parse_date(date_text):
+    dayofweek, _ = date_text.split(' ', 1)
+    yearless = datetime.strptime(date_text, "%A %d %B")
+    current_year = datetime.now().date().year
+    for year in range(current_year - 2, current_year + 2):
+        attempt = yearless.replace(year=year)
+        if attempt.strftime("%A") == dayofweek.lower():
+            return attempt
+    raise ValueError(date_text)
+
+locale.setlocale(locale.LC_ALL, "nl_NL")    
 
 # Copy start dates from existing haarlem.ics
 start_dates = {}
@@ -36,35 +49,37 @@ calendar.add('summary', "Haarlem")
 calendar.add('prodid', '-//Haarlem agenda//Haarlem agenda//')
 calendar.add('version', '2.0')
 
-mainpage = "https://www.visithaarlem.com/nl/uitagenda"
-root = "https://www.visithaarlem.com"
-events_page = "https://www.visithaarlem.com/nl/uitagenda/overzicht?calendar_range=&keyword=Evenementen&search="
+events_page = "https://www.visithaarlem.com/uitagenda/"
 
 res = requests.get(events_page)
 soup = BeautifulSoup(res.text, "html.parser")
-links = soup.select("a.tile__link-overlay")
-urls = [root + a['href'] for a in links if a['href'].startswith("/nl/uitagenda/overzicht/")]
+links = soup.select("div[class^='featured'] a[href]")
+urls = [a['href'] for a in links if a['href'].startswith("https://www.visithaarlem.com/evenement/")]
 for url in urls:
-    print(url)
     res = requests.get(url)
     soup = BeautifulSoup(res.text, "html.parser")
-    data_tag = soup.find("script", type="application/ld+json")
-    data = EventData(json.loads(data_tag.text))
+    summary = soup.select_one("meta[property='og:title']")["content"]
+    description = soup.select_one("meta[property='og:description']")["content"]
+    image = None # soup.select_one("meta[property='og:image']")["content"]
+    summary, _ = summary.split(" | ")
 
-    if data.duration < timedelta(days=14):
-        summary = data.summary
-        start_date = data.start.date()
+    dates = soup.select("h5:not([class])")
+    if 0 < len(dates) < 14:
+        dates = [parse_date(d.text) for d in dates]
+        start_date = min(dates)
+        end_date = max(dates)
+
         if summary in start_dates:
             start_date = min(start_date, start_dates[summary])
 
         event = Event()
         event.add('summary', summary)
         event.add('dtstart', start_date)
-        event.add('dtend', data.end.date())
+        event.add('dtend', end_date)
         event.add('dtstamp', datetime.now())
-        event.add('description', data.description)
-        if data.image:
-            event.add('image', data.image, parameters={'VALUE': 'URI'})
+        event.add('description', description)
+        if image:
+            event.add('image', image, parameters={'VALUE': 'URI'})
         calendar.add_component(event)
 
 with open('haarlem.ics', 'wb') as fp:
