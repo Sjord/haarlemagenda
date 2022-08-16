@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import json
 from icalendar import Calendar, Event
 import dateutil.parser
-from datetime import datetime, timedelta
+from datetime import datetime
 import locale
 
 
@@ -21,7 +21,7 @@ class EventData:
 
 def parse_date(date_text):
     dayofweek, _ = date_text.split(' ', 1)
-    yearless = datetime.strptime(date_text, "%A %d %B")
+    yearless = datetime.strptime(date_text, "%A %d %B").date()
     current_year = datetime.now().date().year
     for year in range(current_year - 2, current_year + 2):
         attempt = yearless.replace(year=year)
