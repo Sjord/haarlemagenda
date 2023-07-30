@@ -53,7 +53,7 @@ events_page = "https://www.visithaarlem.com/uitagenda/"
 
 res = requests.get(events_page)
 soup = BeautifulSoup(res.text, "html.parser")
-links = soup.select("div[class^='featured'] a[href]")
+links = soup.select("div[class*='featured-event'] a[href]")
 urls = [a['href'] for a in links if a['href'].startswith("https://www.visithaarlem.com/evenement/")]
 for url in urls:
     res = requests.get(url)
