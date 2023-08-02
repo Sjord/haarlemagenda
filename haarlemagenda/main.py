@@ -78,6 +78,7 @@ for url in urls:
         event.add('dtend', end_date)
         event.add('dtstamp', datetime.now())
         event.add('description', description)
+        event.add('url', url)
         if image:
             event.add('image', image, parameters={'VALUE': 'URI'})
         calendar.add_component(event)
